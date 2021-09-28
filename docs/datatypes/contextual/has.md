@@ -34,7 +34,7 @@ val combined: Has[Logging] with Has[RandomInt] = logger ++ random
 ### Binding Services
 
 The extra power that is given by `Has` is that the resulting data structure is backed by an _heterogeneous map_. `Has` can be thought of as a `Map[K, V]` which keys are _service types_ and values are _service implementations_. from service type to service implementation, that collects each instance that is mixed in so that the instances can be accessed/extracted/modified individually, all while still guaranteeing supreme type safety.
-
+ 
 ZIO internally can ask `combined` using `get` method to determine binding configurations:
 
 ```scala mdoc:silent:nest
