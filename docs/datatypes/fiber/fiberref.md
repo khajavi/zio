@@ -63,7 +63,7 @@ for {
 
 ### join Semantic
 If we `join` a fiber then its `FiberRef` is merged back into the parent fiber:
-
+ 
 ```scala mdoc:silent
 for {
   fiberRef <- FiberRef.make(5)
