@@ -11,7 +11,7 @@ ZIO contains a few data types that can help you solve complex problems in asynch
    - [Fiber Primitives](#fiber-primitives)
    - [Concurrency Primitives](#concurrency-primitives)
    - [STM](#stm)
-3. [Resource Safety](#resource-safety)
+3. [Resource Management](#resource-management)
 6. [Streaming](#streaming)
 7. [Miscellaneous](#miscellaneous)
 
@@ -26,7 +26,6 @@ ZIO contains a few data types that can help you solve complex problems in asynch
  - **[Runtime](core/runtime.md)** — A `Runtime[R]` is capable of executing tasks within an environment `R`.
  - **[Exit](core/exit.md)** — An `Exit[E, A]` describes the result of executing an `IO` value.
  - **[Cause](core/cause.md)** - `Cause[E]` is a description of a full story of a fiber failure. 
- - **[Runtime](core/runtime.md)** — A `Runtime[R]` is capable of executing tasks within an environment `R`.
 
 ## Contextual Data Types
 - **[Has](contextual/has.md)** — The trait `Has[A]` is used with the [ZIO environment](contextual/index.md#zio-environment) to express an effect's dependency on a service of type `A`. 
@@ -67,13 +66,14 @@ ZIO contains a few data types that can help you solve complex problems in asynch
  - **[TReentrantLock](stm/treentrantlock.md)** - A `TReentrantLock` is a reentrant read / write lock that can be composed.
  - **[TSemaphore](stm/tsemaphore.md)** - A `TSemaphore` is a semaphore that can participate in transactions.
  
-## Resource Safety
+## Resource Management
 - **[ZManaged](resource/zmanaged.md)** — A `ZManaged` is a value that describes a perishable resource that may be consumed only once inside a given scope.
     - **[Managed](resource/managed.md)** — `Managed[E, A]` is a type alias for `ZManaged[Any, E, A]`.
     - **[TaskManaged](resource/task-managed.md)** — `TaskManaged[A]` is a type alias for `ZManaged[Any, Throwable, A]`.
     - **[RManaged](resource/rmanaged.md)** — `RManaged[R, A]` is a type alias for `ZManaged[R, Throwable, A]`.
     - **[UManaged](resource/umanaged.md)** — `UManaged[A]` is a type alias for `ZManaged[Any, Nothing, A]`.
     - **[URManaged](resource/urmanaged.md)** — `URManaged[R, A]` is a type alias for `ZManaged[R, Nothing, A]`.
+- **[ZPool](resource/zpool.md)** — An asynchronous and concurrent generalized pool of reusable managed resources.
 
 ## Streaming
 - **[ZStream](stream/zstream.md)** — A `ZStream` is a lazy, concurrent, asynchronous source of values.
