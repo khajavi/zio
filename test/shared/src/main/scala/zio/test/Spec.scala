@@ -609,22 +609,22 @@ object Spec {
   final case class TestCase[-R, +E, +T](test: ZIO[R, E, T], annotations: TestAnnotationMap)
       extends SpecCase[R, E, T, Nothing]
 
-  final def exec[R, E, T](exec: ExecutionStrategy, spec: Spec[R, E, T]): Spec[R, E, T] =
+  private[test] final def exec[R, E, T](exec: ExecutionStrategy, spec: Spec[R, E, T]): Spec[R, E, T] =
     Spec(ExecCase(exec, spec))
 
-  final def labeled[R, E, T](label: String, spec: Spec[R, E, T]): Spec[R, E, T] =
+  private[test] final def labeled[R, E, T](label: String, spec: Spec[R, E, T]): Spec[R, E, T] =
     Spec(LabeledCase(label, spec))
 
-  final def managed[R, E, T](managed: ZManaged[R, E, Spec[R, E, T]]): Spec[R, E, T] =
+  private[test] final def managed[R, E, T](managed: ZManaged[R, E, Spec[R, E, T]]): Spec[R, E, T] =
     Spec(ManagedCase(managed))
 
-  final def multiple[R, E, T](specs: Chunk[Spec[R, E, T]]): Spec[R, E, T] =
+  private[test] final def multiple[R, E, T](specs: Chunk[Spec[R, E, T]]): Spec[R, E, T] =
     Spec(MultipleCase(specs))
 
-  final def test[R, E, T](test: ZIO[R, E, T], annotations: TestAnnotationMap): Spec[R, E, T] =
+  private[test] final def test[R, E, T](test: ZIO[R, E, T], annotations: TestAnnotationMap): Spec[R, E, T] =
     Spec(TestCase(test, annotations))
 
-  val empty: Spec[Any, Nothing, Nothing] =
+  private[test] val empty: Spec[Any, Nothing, Nothing] =
     Spec.multiple(Chunk.empty)
 
   final class ProvideSomeLayer[R0, -R, +E, +T](private val self: Spec[R, E, T]) extends AnyVal {
