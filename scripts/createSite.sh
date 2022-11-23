@@ -1,7 +1,8 @@
 set -ex
 
 OLDDIR=`pwd`
-export SBT_OPTS="-Xmx2048m -XX:+UseG1GC"
+export SBT_OPTS="-Xmx2048m -Xss2m -XX:+UseG1GC"
+export JDK_JAVA_OPTIONS="-Xmx2048m -Xss2m -XX:+UseG1GC"
 
 # Clean existing build and mdoc output directory
 rm -Rf target
