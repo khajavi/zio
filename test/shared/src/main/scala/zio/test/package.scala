@@ -334,7 +334,7 @@ package object test extends CompileVariants {
         _ <- ZIO.whenZIODiscard(child.hasChildrenAlive) {
                val cancelWarning = Clock.globalScheduler.schedule(
                  () =>
-                   logMessageWithTrace({
+                   logMessageWithTrace {
                      val quotedLabel = "\"" + label + "\""
                      s"Warning: ZIO Test is attempting to interrupt fiber " +
                        s"${child.id} forked in test $quotedLabel due to automatic, " +
@@ -342,7 +342,7 @@ package object test extends CompileVariants {
                        "seconds to complete. This may indicate a resource leak. " +
                        "Make sure you are not forking a fiber in an " +
                        "uninterruptible region."
-                   }),
+                   },
                  10.seconds
                )(Unsafe)
                (child.interrupt *> ZIO.succeed(cancelWarning())).forkDaemon
