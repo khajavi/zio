@@ -14,7 +14,27 @@ import zio.stacktracer.TracingImplicits.disableAutoTrace
  * A CyclicBarrier supports an optional action command that is run once per
  * barrier point, after the last fiber in the party arrives, but before any
  * fibers are released. This barrier action is useful for updating shared-state
- * before any of the parties continue.
+ * before any of the parties continue. A fiber that calls `await` while the
+ * action is still running joins the cycle that is finishing and is released
+ * with it.
+ *
+ * When a waiting party is interrupted, the barrier breaks: the other waiting
+ * parties fail with `()`, and every later `await` fails with `()` until
+ * `reset` is called.
+ *
+ * {{{
+ * import zio._
+ *
+ * val tickets: UIO[List[Int]] =
+ *   for {
+ *     barrier <- CyclicBarrier.make(3)
+ *     arrived <- ZIO
+ *                  .foreachPar(List("a", "b", "c"))(_ => barrier.await)
+ *                  .orElseSucceed(Nil)
+ *   } yield arrived.sorted // List(0, 1, 2)
+ * }}}
+ *
+ * @see [[https://zio.dev/reference/sync/cyclicbarrier/ CyclicBarrier]]
  */
 final class CyclicBarrier private (
   /** The number of parties required to trip this barrier. */
@@ -59,6 +79,11 @@ final class CyclicBarrier private (
   /**
    * Waits until all parties have invoked await on this barrier. Fails if the
    * barrier is broken.
+   *
+   * Returns the number of parties that had still to arrive when this one did:
+   * `parties - 1` for the first party of a cycle and `0` for the last. Fails
+   * with `()` when the barrier is already broken, and when it breaks while
+   * waiting (because of `reset` or the interruption of another waiting party).
    */
   val await: IO[Unit, Int] =
     ZIO.uninterruptibleMask { restore =>
@@ -86,26 +111,50 @@ final class CyclicBarrier private (
       }.flatten
     }
 
-  /** Queries if this barrier is in a broken state. */
+  /**
+   * Queries if this barrier is in a broken state. It becomes `true` when a
+   * waiting party is interrupted, and `false` again after `reset`.
+   */
   def isBroken: UIO[Boolean] =
     ZIO.succeed(_broken)
 
-  /** The number of parties currently waiting at the barrier. */
+  /**
+   * The number of parties currently waiting at the barrier. After a waiting
+   * party is interrupted, it still counts the parties that were waiting when
+   * the barrier broke, until `reset`.
+   */
   def waiting: UIO[Int] =
     ZIO.succeed(_waiting)
 
-  /** Resets the barrier to its initial state. Breaks any waiting party. */
+  /**
+   * Resets the barrier to its initial state. Breaks any waiting party.
+   *
+   * The waiting parties fail with `()`. Afterwards the barrier is not broken
+   * and no party is waiting.
+   */
   def reset: UIO[Unit] =
     semaphore.withPermit(ZIO.succeed(resetUnsafe()))
 
 }
 
+/** Constructors for [[CyclicBarrier]]. */
 object CyclicBarrier {
   private implicit def trace: Trace = Trace.empty
 
+  /**
+   * Creates a barrier for `parties` fibers, with no barrier action. `parties`
+   * is not checked: with `0`, `await` never completes.
+   */
   def make(parties: Int): UIO[CyclicBarrier] =
     make(parties, Exit.unit)
 
+  /**
+   * Creates a barrier for `parties` fibers that runs `action` each time the
+   * last party arrives, on that party's fiber, before the waiting parties are
+   * released. When `action` dies, that last party dies with the same defect,
+   * the other parties of the cycle keep waiting, and the barrier is not
+   * broken.
+   */
   def make(parties: Int, action: UIO[Any]): UIO[CyclicBarrier] =
     ZIO.succeed(new CyclicBarrier(parties, action))
 

@@ -3,6 +3,32 @@ package zio.concurrent
 import zio._
 import scala.util.Random
 
+/**
+ * A lock that the fiber holding it can acquire again. Ownership belongs to a
+ * fiber, identified by its `FiberId`: another fiber, including a child of the
+ * owner, cannot release it. Each `lock` or successful `tryLock` by the owner
+ * adds one hold, and the lock is released when the owner has called `unlock`
+ * as many times.
+ *
+ * When the lock is released and fibers are waiting, a fair lock
+ * (`ReentrantLock.make(true)`) passes it to the fiber that has waited longest;
+ * the default unfair lock passes it to a randomly chosen waiting fiber.
+ *
+ * {{{
+ * import zio._
+ *
+ * val holds: UIO[(Int, Boolean)] =
+ *   for {
+ *     lock   <- ReentrantLock.make()
+ *     _      <- lock.lock *> lock.lock
+ *     count  <- lock.holdCount
+ *     _      <- lock.unlock *> lock.unlock
+ *     locked <- lock.locked
+ *   } yield (count, locked) // (2,false)
+ * }}}
+ *
+ * @see [[https://zio.dev/reference/sync/reentrantlock/ ReentrantLock]]
+ */
 final class ReentrantLock private (fairness: Boolean, state: Ref[ReentrantLock.State]) {
   import ReentrantLock.State
 
@@ -14,7 +40,10 @@ final class ReentrantLock private (fairness: Boolean, state: Ref[ReentrantLock.S
   lazy val hasQueuedFibers: UIO[Boolean] =
     state.get.map(_.waiters.nonEmpty)
 
-  /** Queries the number of holds on this lock by the current fiber. */
+  /**
+   * Queries the number of holds on this lock by the current fiber. Returns `0`
+   * when the current fiber does not hold the lock.
+   */
   lazy val holdCount: UIO[Int] =
     ZIO.fiberIdWith { fiberId =>
       state.get.map {
@@ -47,6 +76,8 @@ final class ReentrantLock private (fairness: Boolean, state: Ref[ReentrantLock.S
    * If the lock is held by another fiber then the current fiber is put to sleep
    * until the lock has been acquired, at which time the lock hold count is set
    * to one.
+   *
+   * Interrupting a waiting fiber removes it from the queue of waiting fibers.
    */
   lazy val lock: UIO[Unit] =
     (ZIO.fiberId <*> Promise.make[Nothing, Unit]).flatMap { case (fiberId, p) =>
@@ -88,7 +119,9 @@ final class ReentrantLock private (fairness: Boolean, state: Ref[ReentrantLock.S
 
   /**
    * Acquires the lock only if it is not held by another fiber at the time of
-   * invocation.
+   * invocation. Returns `true` when the current fiber holds the lock
+   * afterwards; when it already held the lock, its hold count goes up by one.
+   * Returns `false` without waiting when another fiber holds the lock.
    */
   lazy val tryLock: UIO[Boolean] =
     ZIO.fiberIdWith { fiberId =>
@@ -107,7 +140,7 @@ final class ReentrantLock private (fairness: Boolean, state: Ref[ReentrantLock.S
    *
    * If the current fiber is the holder of this lock then the hold count is
    * decremented. If the hold count is now zero then the lock is released. If
-   * the current thread is not the holder of this lock then nothing happens.
+   * the current fiber is not the holder of this lock then nothing happens.
    */
   lazy val unlock: UIO[Unit] =
     ZIO.fiberIdWith { fiberId =>
@@ -121,7 +154,10 @@ final class ReentrantLock private (fairness: Boolean, state: Ref[ReentrantLock.S
       }.flatten
     }
 
-  /** Acquires and releases the lock as a managed effect. */
+  /**
+   * Acquires the lock and adds an `unlock` to the scope, which runs when the
+   * scope closes. Returns the current fiber's hold count after acquiring.
+   */
   lazy val withLock: URIO[Scope, Int] =
     ZIO.acquireReleaseInterruptible(lock *> holdCount)(unlock)
 
@@ -155,7 +191,14 @@ final class ReentrantLock private (fairness: Boolean, state: Ref[ReentrantLock.S
 
 }
 
+/** Constructors for [[ReentrantLock]]. */
 object ReentrantLock {
+
+  /**
+   * Creates an unlocked lock. With `fairness = true`, a released lock goes to
+   * the fiber that has waited longest; with the default `false`, it goes to a
+   * randomly chosen waiting fiber.
+   */
   def make(fairness: Boolean = false): UIO[ReentrantLock] =
     Ref.make(State.empty).map(new ReentrantLock(fairness, _))
 

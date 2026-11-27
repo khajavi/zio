@@ -8,12 +8,37 @@ import scala.jdk.CollectionConverters._
 
 /**
  * Wrapper over `java.util.concurrent.ConcurrentHashMap`.
+ *
+ * A mutable map that fibers can share. Every operation returns a `UIO` that
+ * runs the matching `ConcurrentHashMap` call each time it is executed. A
+ * single call such as `compute`, `computeIfAbsent`, `putIfAbsent` or `replace`
+ * updates its key atomically, but a `get` followed by a `put` does not: use
+ * `compute` to update a value from its previous value.
+ *
+ * Operations that visit the entries (`toList`, `fold`, `collectFirst`, ...)
+ * see them in the order of the underlying hash table, not in insertion order.
+ *
+ * {{{
+ * import zio._
+ *
+ * val hits: UIO[Option[Int]] =
+ *   for {
+ *     counts <- ConcurrentMap.make("/home" -> 0)
+ *     _ <- ZIO.foreachParDiscard(1 to 100) { _ =>
+ *            counts.compute("/home", (_, n) => n.map(_ + 1))
+ *          }
+ *     n <- counts.get("/home")
+ *   } yield n // Some(100)
+ * }}}
+ *
+ * @see [[https://zio.dev/reference/sync/concurrentmap/ ConcurrentMap]]
  */
 final class ConcurrentMap[K, V] private (private val underlying: ConcurrentHashMap[K, V]) extends AnyVal {
 
   /**
    * Finds the first element of a map for which the partial function is defined
-   * and applies the function to it.
+   * and applies the function to it. "First" follows the iteration order of the
+   * underlying hash table. Returns `None` when `pf` is defined for no entry.
    */
   def collectFirst[B](pf: PartialFunction[(K, V), B]): UIO[Option[B]] =
     ZIO.succeed {
@@ -30,20 +55,27 @@ final class ConcurrentMap[K, V] private (private val underlying: ConcurrentHashM
   /**
    * Attempts to compute a mapping for the specified key and its current mapped
    * value (or None if there is no current mapping).
+   *
+   * When `remap` returns `None`, the key is removed. Returns the new value, or
+   * `None` when the key has no mapping afterwards. The update is atomic: 1000
+   * fibers that each add one with `compute` in parallel leave the value 1000
+   * higher.
    */
   def compute(key: K, remap: (K, Option[V]) => Option[V]): UIO[Option[V]] =
     ZIO.succeed(Option(underlying.compute(key, remapComputeWith(remap))))
 
   /**
-   * Computes a value of a non-existing key.
+   * Returns the value bound to `key`. When the key is absent, it first binds
+   * the key to `map(key)` and returns that value.
    */
   def computeIfAbsent(key: K, map: K => V): UIO[V] =
     ZIO.succeed(underlying.computeIfAbsent(key, mapWith(map)))
 
   /**
-   * Attempts to compute a new mapping of an existing key.
+   * Attempts to compute a new mapping of an existing key. Returns the new
+   * value, or `None` when the key is absent, in which case `remap` is not
+   * called.
    */
-
   def computeIfPresent(key: K, remap: (K, V) => V): UIO[Option[V]] =
     ZIO.succeed(Option(underlying.computeIfPresent(key, remapComputeIfPresentWith(remap))))
 
@@ -51,7 +83,6 @@ final class ConcurrentMap[K, V] private (private val underlying: ConcurrentHashM
    * Tests whether a given predicate holds true for at least one element in a
    * map.
    */
-
   def exists(p: (K, V) => Boolean): UIO[Boolean] =
     ZIO.succeed {
       var result = false
@@ -106,14 +137,16 @@ final class ConcurrentMap[K, V] private (private val underlying: ConcurrentHashM
     ZIO.succeed(Option(underlying.put(key, value)))
 
   /**
-   * Adds all new key-value pairs
+   * Binds each key in `keyValues` to its value, replacing any existing
+   * binding. When a key appears more than once, the last pair wins.
    */
   def putAll(keyValues: (K, V)*): UIO[Unit] =
     ZIO.succeed(underlying.putAll(keyValues.toMap.asJava))
 
   /**
-   * Adds a new key-value pair, unless the key is already bound to some other
-   * value.
+   * Adds a new key-value pair, unless the key is already bound to a value
+   * (even an equal one). Returns the value already bound to the key, or `None`
+   * when the pair was added.
    */
   def putIfAbsent(key: K, value: V): UIO[Option[V]] =
     ZIO.succeed(Option(underlying.putIfAbsent(key, value)))
@@ -133,12 +166,13 @@ final class ConcurrentMap[K, V] private (private val underlying: ConcurrentHashM
 
   /**
    * Removes the entry for the given key if it is mapped to a given value.
+   * Returns `true` when the entry was removed.
    */
   def remove(key: K, value: V): UIO[Boolean] =
     ZIO.succeed(underlying.remove(key, value))
 
   /**
-   * Removes all elements which do not satisfy the given predicate.
+   * Removes all elements which satisfy the given predicate.
    */
   def removeIf(p: (K, V) => Boolean): UIO[Unit] =
     ZIO.succeed(
@@ -173,13 +207,15 @@ final class ConcurrentMap[K, V] private (private val underlying: ConcurrentHashM
 
   /**
    * Replaces the entry for the given key only if it is mapped to some value.
+   * Returns the previous value, or `None` when the key is absent and nothing
+   * changed.
    */
   def replace(key: K, value: V): UIO[Option[V]] =
     ZIO.succeed(Option(underlying.replace(key, value)))
 
   /**
    * Replaces the entry for the given key only if it was previously mapped to a
-   * given value.
+   * given value. Returns `true` when the entry was replaced.
    */
   def replace(key: K, oldValue: V, newValue: V): UIO[Boolean] =
     ZIO.succeed(underlying.replace(key, oldValue, newValue))
@@ -227,6 +263,7 @@ final class ConcurrentMap[K, V] private (private val underlying: ConcurrentHashM
     }
 }
 
+/** Constructors for [[ConcurrentMap]]. */
 object ConcurrentMap {
 
   /**
@@ -237,7 +274,7 @@ object ConcurrentMap {
 
   /**
    * Makes a new `ConcurrentMap` initialized with provided collection of
-   * key-value pairs.
+   * key-value pairs. When a key appears more than once, the last pair wins.
    */
   def fromIterable[K, V](pairs: Iterable[(K, V)]): UIO[ConcurrentMap[K, V]] =
     ZIO.succeed {
@@ -249,7 +286,8 @@ object ConcurrentMap {
     }
 
   /**
-   * Makes a new `ConcurrentMap` initialized with provided key-value pairs.
+   * Makes a new `ConcurrentMap` initialized with provided key-value pairs. When
+   * a key appears more than once, the last pair wins.
    */
   def make[K, V](pairs: (K, V)*): UIO[ConcurrentMap[K, V]] =
     ZIO.succeed {

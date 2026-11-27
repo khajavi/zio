@@ -17,11 +17,29 @@ import zio.stm.STM
  *
  * They were introduced in the paper "Concurrent Haskell" by Simon Peyton Jones,
  * Andrew Gordon and Sigbjorn Finne.
+ *
+ * The blocking operations are STM transactions that retry until the `MVar` is
+ * in the state they need. Fibers waiting on the same `MVar` are not served in
+ * the order they started waiting: five fibers that called `take` one after
+ * the other did not receive five successive `put`s in that order.
+ *
+ * {{{
+ * import zio._
+ *
+ * val reply: UIO[String] =
+ *   for {
+ *     box   <- MVar.empty[String]
+ *     _     <- box.put("pong").fork
+ *     value <- box.take
+ *   } yield value // pong
+ * }}}
+ *
+ * @see [[https://zio.dev/reference/sync/mvar/ MVar]]
  */
 final class MVar[A] private (private val content: TRef[Option[A]]) {
 
   /**
-   * Check whether the `MVar` is empty.
+   * Checks whether the `MVar` is empty.
    *
    * Notice that the boolean value returned is just a snapshot of the state of
    * the `MVar`. By the time you get to react on its result, the `MVar` may have
@@ -33,7 +51,8 @@ final class MVar[A] private (private val content: TRef[Option[A]]) {
 
   /**
    * A slight variation on `update` that allows a value to be returned (`b`) in
-   * addition to the modified value of the `MVar`.
+   * addition to the modified value of the `MVar`. Waits until the `MVar` is
+   * full.
    */
   def modify[B](f: A => (B, A)): UIO[B] =
     content.get.collect { case Some(a) =>
@@ -42,23 +61,24 @@ final class MVar[A] private (private val content: TRef[Option[A]]) {
     }.flatMap { case (b, newA) => content.set(newA) as b }.commit
 
   /**
-   * Put a value into an `MVar`. If the `MVar` is currently full, `put` will
+   * Puts a value into an `MVar`. If the `MVar` is currently full, `put` will
    * wait until it becomes empty.
    */
   def put(x: A): UIO[Unit] =
     (content.get.collect { case None => () } *> content.set(Some(x))).commit
 
   /**
-   * Atomically read the contents of an `MVar`. If the `MVar` is currently
-   * empty, `read` will wait until it is full. `read` is guaranteed to receive
-   * the next `put`.
+   * Atomically reads the contents of an `MVar`, leaving it full. If the `MVar`
+   * is currently empty, `read` will wait until it is full. When a `take` is
+   * waiting too, it can empty the `MVar` first, so `read` does not always
+   * receive the next `put`.
    */
   def read: UIO[A] =
     content.get.collect { case Some(x) => x }.commit
 
   /**
-   * Take a value from an `MVar`, put a new value into the `MVar` and return the
-   * value taken.
+   * Takes a value from an `MVar`, puts a new value into the `MVar` and returns
+   * the value taken, in one transaction. Waits until the `MVar` is full.
    */
   def swap(x: A): UIO[A] =
     (for {
@@ -70,8 +90,9 @@ final class MVar[A] private (private val content: TRef[Option[A]]) {
     } yield y).commit
 
   /**
-   * Return the contents of the `MVar`. If the `MVar` is currently empty, `take`
-   * will wait until it is full. After a `take`, the `MVar` is left empty.
+   * Returns the contents of the `MVar`. If the `MVar` is currently empty,
+   * `take` will wait until it is full. After a `take`, the `MVar` is left
+   * empty.
    */
   def take: UIO[A] =
     (content.get.collect { case Some(a) => a }.flatMap(a => content.set(None) as a)).commit
@@ -110,19 +131,21 @@ final class MVar[A] private (private val content: TRef[Option[A]]) {
     } yield a).commit
 
   /**
-   * Replaces the contents of an `MVar` with the result of `f(a)`.
+   * Replaces the contents of an `MVar` with the result of `f(a)`. Waits until
+   * the `MVar` is full.
    */
   def update(f: A => A): UIO[Unit] =
     content.get.collect { case Some(a) => Some(f(a)) }.flatMap(content.set).commit
 }
 
+/** Constructors for [[MVar]]. */
 object MVar {
 
-  /** Creates an `MVar` which is initially empty */
+  /** Creates an `MVar` which is initially empty. */
   def empty[A]: UIO[MVar[A]] =
     TRef.make(Option.empty[A]).map(new MVar(_)).commit
 
-  /** Create an MVar which contains the supplied value */
+  /** Creates an `MVar` which contains the supplied value. */
   def make[A](a: A): UIO[MVar[A]] =
     TRef.make(Option(a)).map(new MVar(_)).commit
 }

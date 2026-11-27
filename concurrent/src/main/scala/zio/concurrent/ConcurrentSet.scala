@@ -9,18 +9,36 @@ import scala.jdk.CollectionConverters._
 /**
  * A `ConcurrentSet` is a Set wrapper over
  * `java.util.concurrent.ConcurrentHashMap`.
+ *
+ * A mutable set that fibers can share. Every operation returns a `UIO` that
+ * runs the matching call on the underlying key set each time it is executed.
+ * Operations that visit the elements (`find`, `fold`, `collectFirst`, ...) see
+ * them in the order of the underlying hash table, not in insertion order.
+ *
+ * {{{
+ * import zio._
+ *
+ * val visited: UIO[Set[String]] =
+ *   for {
+ *     seen <- ConcurrentSet.empty[String]
+ *     _    <- ZIO.foreachParDiscard(List("/home", "/about", "/home"))(seen.add)
+ *     all  <- seen.toSet
+ *   } yield all // Set(/about, /home)
+ * }}}
+ *
+ * @see [[https://zio.dev/reference/sync/concurrentset/ ConcurrentSet]]
  */
 final class ConcurrentSet[A] private (private val underlying: ConcurrentHashMap.KeySetView[A, java.lang.Boolean])
     extends AnyVal {
 
   /**
-   * Adds a new value.
+   * Adds a new value. Returns `true` when the value was not in the set yet.
    */
   def add(x: A): UIO[Boolean] =
     ZIO.succeed(underlying.add(x))
 
   /**
-   * Adds all new values.
+   * Adds all new values. Returns `true` when the set changed.
    */
   def addAll(xs: Iterable[A]): UIO[Boolean] =
     ZIO.succeed(underlying.addAll(xs.asJavaCollection))
@@ -33,7 +51,8 @@ final class ConcurrentSet[A] private (private val underlying: ConcurrentHashMap.
 
   /**
    * Finds the first element of a set for which the partial function is defined
-   * and applies the function to it.
+   * and applies the function to it. "First" follows the iteration order of the
+   * underlying hash table. Returns `None` when `pf` is defined for no element.
    */
   def collectFirst[B](pf: PartialFunction[A, B]): UIO[Option[B]] =
     ZIO.succeed {
@@ -49,13 +68,14 @@ final class ConcurrentSet[A] private (private val underlying: ConcurrentHashMap.
     }
 
   /**
-   * Tests whether if the element is in the set.
+   * Tests whether the element is in the set.
    */
   def contains(x: A): UIO[Boolean] =
     ZIO.succeed(underlying.contains(x))
 
   /**
-   * Tests if the elements in the collection are a subset of the set.
+   * Tests if the elements in the collection are a subset of the set. Returns
+   * `true` for an empty collection.
    */
   def containsAll(xs: Iterable[A]): UIO[Boolean] =
     ZIO.succeed(xs.forall(x => underlying.contains(x)))
@@ -77,7 +97,8 @@ final class ConcurrentSet[A] private (private val underlying: ConcurrentHashMap.
     }
 
   /**
-   * Retrieves the elements in which predicate is satisfied.
+   * Returns the first element, in the iteration order of the underlying hash
+   * table, that satisfies the predicate, or `None` when no element does.
    */
   def find[B](p: A => Boolean): UIO[Option[A]] =
     ZIO.succeed {
@@ -127,34 +148,35 @@ final class ConcurrentSet[A] private (private val underlying: ConcurrentHashMap.
     ZIO.succeed(underlying.isEmpty)
 
   /**
-   * Removes the entry for the given value if it is mapped to an existing
-   * element.
+   * Removes `x` from the set. Returns `true` when it was in the set.
    */
   def remove(x: A): UIO[Boolean] =
     ZIO.succeed(underlying.remove(x))
 
   /**
-   * Removes all the entries for the given values if they are mapped to an
-   * existing element.
+   * Removes every element of `xs` from the set. Returns `true` when the set
+   * changed.
    */
   def removeAll(xs: Iterable[A]): UIO[Boolean] =
     ZIO.succeed(underlying.removeAll(xs.asJavaCollection))
 
   /**
-   * Removes all elements which satisfy the given predicate.
+   * Removes all elements which satisfy the given predicate. Returns `true`
+   * when any element was removed.
    */
   def removeIf(p: A => Boolean): UIO[Boolean] =
     ZIO.succeed(underlying.removeIf(makePredicate(p)))
 
   /**
-   * Retain all the entries for the given values if they are mapped to an
-   * existing element.
+   * Keeps only the elements that are also in `xs`. Returns `true` when the set
+   * changed.
    */
   def retainAll(xs: Iterable[A]): UIO[Boolean] =
     ZIO.succeed(underlying.retainAll(xs.asJavaCollection))
 
   /**
-   * Removes all elements which do not satisfy the given predicate.
+   * Removes all elements which do not satisfy the given predicate. Returns
+   * `true` when any element was removed.
    */
   def retainIf(p: A => Boolean): UIO[Boolean] =
     ZIO.succeed(underlying.removeIf(makePredicate(a => !p(a))))
@@ -166,13 +188,14 @@ final class ConcurrentSet[A] private (private val underlying: ConcurrentHashMap.
     ZIO.succeed(underlying.size())
 
   /**
-   * Convert the ConcurrentSet to Set.
+   * Returns the current elements as an immutable `Set`.
    */
   def toSet: UIO[Set[A]] =
     ZIO.succeed(underlying.asScala.toSet)
 
   /**
    * Transform all elements of the ConcurrentSet using the given function.
+   * Elements that `f` maps to the same value end up as one element.
    */
   def transform(f: A => A): UIO[Unit] =
     ZIO.succeed {
@@ -193,6 +216,7 @@ final class ConcurrentSet[A] private (private val underlying: ConcurrentHashMap.
     }
 }
 
+/** Constructors for [[ConcurrentSet]]. */
 object ConcurrentSet {
 
   /**
