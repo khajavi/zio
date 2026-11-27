@@ -18,7 +18,15 @@ package zio.internal.stacktracer
 
 import zio.stacktracer.TracingImplicits.disableAutoTrace
 
+/**
+ * The source file path and the 1-based line of a call site, filled in by the
+ * compiler through the implicit in the companion object. `path` is the path of
+ * the source file as the compiler received it, not only the file name. ZIO
+ * Test uses it to report where an assertion was written.
+ */
 final case class SourceLocation(path: String, line: Int)
+/** Provides the implicit [[SourceLocation]] of the call site. */
 object SourceLocation {
+  /** Materializes the [[SourceLocation]] of the call site. */
   inline given SourceLocation = ${ Macros.sourceLocation }
 }
