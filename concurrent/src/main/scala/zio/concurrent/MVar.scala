@@ -19,9 +19,8 @@ import zio.stm.STM
  * Andrew Gordon and Sigbjorn Finne.
  *
  * The blocking operations are STM transactions that retry until the `MVar` is
- * in the state they need. Fibers waiting on the same `MVar` are not served in
- * the order they started waiting: five fibers that called `take` one after the
- * other did not receive five successive `put`s in that order.
+ * in the state they need. Fibers waiting on the same `MVar` are not guaranteed
+ * to be served in the order they started waiting.
  *
  * {{{
  * import zio._
