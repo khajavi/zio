@@ -131,8 +131,8 @@ package object managed extends ZManagedCompatPlatformSpecific {
      * However, unlike `acquireReleaseWith`, the separation of these phases
      * allows the acquisition to be interruptible: the effect that produces the
      * `Reservation` runs uninterruptibly, while the reservation's `acquire`
-     * action is interruptible, and its release action runs when the use
-     * completes or the acquisition is interrupted.
+     * action is interruptible, and its release action runs after the use
+     * completes, and also when the acquisition fails or is interrupted.
      *
      * Useful for concurrent data structures and other cases where the
      * 'deallocator' can tell if the allocation succeeded or not just by
@@ -489,8 +489,7 @@ package object managed extends ZManagedCompatPlatformSpecific {
       ZStream.fromInputStreamScoped[R](is.scoped, chunkSize)
 
     /**
-     * Creates a stream from a managed iterator. The `maxChunkSize` parameter is
-     * the maximum number of elements in a chunk.
+     * Creates a stream from a managed iterator.
      */
     def fromIteratorManaged[R, A](
       iterator: => ZManaged[R, Throwable, Iterator[A]],
@@ -509,8 +508,7 @@ package object managed extends ZManagedCompatPlatformSpecific {
       fromJavaIteratorManaged(iterator, ZStream.DefaultChunkSize)
 
     /**
-     * Creates a stream from a managed Java iterator. The `chunkSize` parameter
-     * is the maximum number of elements in a chunk.
+     * Creates a stream from a managed Java iterator.
      */
     def fromJavaIteratorManaged[R, A](
       iterator: => ZManaged[R, Throwable, java.util.Iterator[A]],
