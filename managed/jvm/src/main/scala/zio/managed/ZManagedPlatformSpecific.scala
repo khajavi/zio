@@ -35,15 +35,15 @@ private[managed] trait ZManagedPlatformSpecific {
     ZIO.blockingExecutor.toManaged.flatMap(executor => ZManaged.onExecutor(executor))
 
   /**
-   * Opens the file at `path` for reading and returns a `ZInputStream` over it.
-   * Fails with an `IOException` when the file cannot be opened.
+   * Returns a managed `ZInputStream` that reads the file at `path`. Fails with
+   * an `IOException` when the file does not exist or cannot be read.
    */
   def readFile(path: Path)(implicit trace: Trace): ZManaged[Any, IOException, ZInputStream] =
     readFile(path.toString())
 
   /**
-   * Opens the file at `path` for reading and returns a `ZInputStream` over it.
-   * Fails with an `IOException` when the file cannot be opened.
+   * Returns a managed `ZInputStream` that reads the file at `path`. Fails with
+   * an `IOException` when the file does not exist or cannot be read.
    */
   def readFile(path: String)(implicit trace: Trace): ZManaged[Any, IOException, ZInputStream] =
     ZManaged
@@ -56,8 +56,8 @@ private[managed] trait ZManagedPlatformSpecific {
       .map(_._2)
 
   /**
-   * Opens the stream of `url` for reading and returns a `ZInputStream` over it.
-   * Fails with an `IOException` when the stream cannot be opened.
+   * Returns a managed `ZInputStream` that reads from `url`. Fails with an
+   * `IOException` when it cannot be read.
    */
   def readURL(url: URL)(implicit trace: Trace): ZManaged[Any, IOException, ZInputStream] =
     ZManaged
@@ -89,9 +89,9 @@ private[managed] trait ZManagedPlatformSpecific {
     } yield is
 
   /**
-   * Opens the file at `path` for writing and returns a `ZOutputStream` over it.
-   * An existing file is truncated. Fails with an `IOException` when the file
-   * cannot be opened.
+   * Returns a managed `ZOutputStream` that writes to the file at `path`. An
+   * existing file is truncated. Fails with an `IOException` when the file cannot
+   * be written.
    */
   def writeFile(path: String)(implicit trace: Trace): ZManaged[Any, IOException, ZOutputStream] =
     ZManaged
@@ -104,9 +104,9 @@ private[managed] trait ZManagedPlatformSpecific {
       .map(_._2)
 
   /**
-   * Opens the file at `path` for writing and returns a `ZOutputStream` over it.
-   * An existing file is truncated. Fails with an `IOException` when the file
-   * cannot be opened.
+   * Returns a managed `ZOutputStream` that writes to the file at `path`. An
+   * existing file is truncated. Fails with an `IOException` when the file cannot
+   * be written.
    */
   def writeFile(path: Path)(implicit trace: Trace): ZManaged[Any, IOException, ZOutputStream] =
     writeFile(path.toString())
