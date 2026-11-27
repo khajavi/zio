@@ -24,9 +24,10 @@ import zio._
  * using the `reloadable` operator on `ZLayer`. Then call
  * `ServiceReloader.reload` to reload the service.
  *
- * The registry keeps one service per type. On Scala 3, the `IsReloadable`
- * instance that `register` and `reloadable` need is marked `@experimental`, so
- * the calling code must be in an `@experimental` scope.
+ * The registry keeps one service per type. On Scala 3, the derived
+ * `IsReloadable` instance that `register` and `reloadable` use is marked
+ * `@experimental`, so code that relies on it must be in an `@experimental`
+ * scope.
  *
  * {{{
  * // scala-2-only
@@ -60,7 +61,8 @@ trait ServiceReloader {
    * the service.
    *
    * Registering a service type that is already registered dies with a
-   * `java.lang.ClassCastException`, and the earlier registration stays in use.
+   * `java.lang.ClassCastException`. The registry keeps the earlier layer, and a
+   * later `reload` builds the service from that layer.
    */
   def register[A: Tag: IsReloadable](serviceLayer: ZLayer[Any, Any, A]): IO[ServiceReloader.Error, A]
 
@@ -155,7 +157,8 @@ object ServiceReloader {
    * the service.
    *
    * Registering a service type that is already registered dies with a
-   * `java.lang.ClassCastException`, and the earlier registration stays in use.
+   * `java.lang.ClassCastException`. The registry keeps the earlier layer, and a
+   * later `reload` builds the service from that layer.
    */
   def register[A: Tag: IsReloadable](
     serviceLayer: ZLayer[Any, Any, A]
