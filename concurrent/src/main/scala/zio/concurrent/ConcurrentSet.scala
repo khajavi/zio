@@ -26,7 +26,8 @@ import scala.jdk.CollectionConverters._
  *   } yield all // Set(/about, /home)
  * }}}
  *
- * @see [[https://zio.dev/reference/sync/concurrentset/ ConcurrentSet]]
+ * @see
+ *   [[https://zio.dev/reference/sync/concurrentset/ ConcurrentSet]]
  */
 final class ConcurrentSet[A] private (private val underlying: ConcurrentHashMap.KeySetView[A, java.lang.Boolean])
     extends AnyVal {
@@ -161,8 +162,8 @@ final class ConcurrentSet[A] private (private val underlying: ConcurrentHashMap.
     ZIO.succeed(underlying.removeAll(xs.asJavaCollection))
 
   /**
-   * Removes all elements which satisfy the given predicate. Returns `true`
-   * when any element was removed.
+   * Removes all elements which satisfy the given predicate. Returns `true` when
+   * any element was removed.
    */
   def removeIf(p: A => Boolean): UIO[Boolean] =
     ZIO.succeed(underlying.removeIf(makePredicate(p)))

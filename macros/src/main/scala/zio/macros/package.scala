@@ -5,7 +5,8 @@ package object macros {
   /**
    * Adds `reloadable` to a layer that builds a service from no inputs.
    *
-   * @see [[https://zio.dev/reference/service-pattern/reloadable-services/ Reloadable Services]]
+   * @see
+   *   [[https://zio.dev/reference/service-pattern/reloadable-services/ Reloadable Services]]
    */
   implicit final class ReloadableSyntax[Service](private val layer: ZLayer[Any, Any, Service]) extends AnyVal {
 

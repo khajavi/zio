@@ -20,8 +20,8 @@ import zio.stm.STM
  *
  * The blocking operations are STM transactions that retry until the `MVar` is
  * in the state they need. Fibers waiting on the same `MVar` are not served in
- * the order they started waiting: five fibers that called `take` one after
- * the other did not receive five successive `put`s in that order.
+ * the order they started waiting: five fibers that called `take` one after the
+ * other did not receive five successive `put`s in that order.
  *
  * {{{
  * import zio._
@@ -34,7 +34,8 @@ import zio.stm.STM
  *   } yield value // pong
  * }}}
  *
- * @see [[https://zio.dev/reference/sync/mvar/ MVar]]
+ * @see
+ *   [[https://zio.dev/reference/sync/mvar/ MVar]]
  */
 final class MVar[A] private (private val content: TRef[Option[A]]) {
 

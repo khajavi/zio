@@ -30,11 +30,10 @@ private[managed] trait ZManagedCompatPlatformSpecific {
 
     /**
      * Creates a stream from an asynchronous callback that can be called
-     * multiple times. The registration of the callback itself returns a
-     * managed resource. The optionality of the error type `E` can be used to
-     * signal the end of the stream, by setting it to `None`. On Scala.js the
-     * callback returns a `Future[Boolean]`; on the other platforms it returns
-     * `Unit`.
+     * multiple times. The registration of the callback itself returns a managed
+     * resource. The optionality of the error type `E` can be used to signal the
+     * end of the stream, by setting it to `None`. On Scala.js the callback
+     * returns a `Future[Boolean]`; on the other platforms it returns `Unit`.
      */
     def asyncManaged[R, E, A](
       register: (ZIO[R, Option[E], Chunk[A]] => Unit) => ZManaged[R, E, Any],

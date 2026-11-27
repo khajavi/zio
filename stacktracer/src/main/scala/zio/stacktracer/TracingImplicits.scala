@@ -4,11 +4,11 @@ package zio.stacktracer
 object TracingImplicits {
 
   /**
-   * Turns off automatic trace generation where it is imported. With
-   * `import zio.stacktracer.TracingImplicits.disableAutoTrace` in scope, a
-   * call that needs an implicit `zio.Trace` and finds none in scope no longer
-   * gets one generated from its source position: it fails to compile. Pass the
-   * trace through an implicit `Trace` parameter, or call
+   * Turns off automatic trace generation where it is imported. With `import
+   * zio.stacktracer.TracingImplicits.disableAutoTrace` in scope, a call that
+   * needs an implicit `zio.Trace` and finds none in scope no longer gets one
+   * generated from its source position: it fails to compile. Pass the trace
+   * through an implicit `Trace` parameter, or call
    * `zio.internal.stacktracer.Tracer.newTrace` to generate one explicitly.
    *
    * The compiler error reads "could not find implicit value for parameter

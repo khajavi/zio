@@ -41,7 +41,8 @@ import zio._
  *   } yield n // 3
  * }}}
  *
- * @see [[https://zio.dev/reference/sync/countdownlatch/ CountdownLatch]]
+ * @see
+ *   [[https://zio.dev/reference/sync/countdownlatch/ CountdownLatch]]
  */
 final class CountdownLatch private (_count: Ref[Int], _waiters: Promise[Nothing, Unit]) {
 

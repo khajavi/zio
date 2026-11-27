@@ -24,15 +24,16 @@ import scala.annotation.{StaticAnnotation, compileTimeOnly}
  * `IO`, `RIO`, `URIO`, `Managed`, `RManaged` or `URManaged`, replaces that
  * parameter in the accessors' types. For example, on `trait Store[F[_, _]]`
  * with the member `def get(key: String): F[String, Int]`, `@accessibleMM[IO]`
- * generates `def get(key: String): ZIO[Store[IO], String, Int]` in
- * `object Store`.
+ * generates `def get(key: String): ZIO[Store[IO], String, Int]` in `object
+ * Store`.
  *
  * Macro annotations exist on Scala 2 only. On Scala 2.13 they need the
  * `-Ymacro-annotations` compiler option, and on Scala 2.12 the macro paradise
  * plugin; without them compilation fails with "enable macro paradise to expand
  * macro annotations".
  *
- * @see [[https://zio.dev/reference/service-pattern/accessor-methods/ Accessor Methods]]
+ * @see
+ *   [[https://zio.dev/reference/service-pattern/accessor-methods/ Accessor Methods]]
  */
 @compileTimeOnly("enable macro paradise to expand macro annotations")
 class accessibleMM[F[_, _]] extends StaticAnnotation {

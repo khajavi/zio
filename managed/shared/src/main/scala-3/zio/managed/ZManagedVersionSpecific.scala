@@ -7,10 +7,10 @@ import zio.internal.macros.LayerMacros
 private[managed] trait ZManagedVersionSpecific[-R, +E, +A] { self: ZManaged[R, E, A] =>
 
   /**
-   * Splits the environment into two parts, assembling one part using the
-   * layers passed to the returned value's `apply` and leaving the remainder
-   * `R0`. The layers are wired at compile time: a missing layer is a compile
-   * error, and a layer that is not needed is reported as a compile warning.
+   * Splits the environment into two parts, assembling one part using the layers
+   * passed to the returned value's `apply` and leaving the remainder `R0`. The
+   * layers are wired at compile time: a missing layer is a compile error, and a
+   * layer that is not needed is reported as a compile warning.
    *
    * On Scala 2 the returned value also has `provideLayer` and
    * `provideSomeLayer`; on Scala 3 it has only `apply`.
@@ -62,6 +62,7 @@ private[managed] trait ZManagedVersionSpecific[-R, +E, +A] { self: ZManaged[R, E
  * the environment of a `ZManaged` and leaves the remainder `R0`.
  */
 final class ProvideSomeZManagedPartiallyApplied[R0, -R, +E, +A](val self: ZManaged[R, E, A]) extends AnyVal {
+
   /**
    * Assembles the layers passed in at compile time and provides them to the
    * `ZManaged`, leaving the environment `R0`. A missing layer is a compile

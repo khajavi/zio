@@ -26,6 +26,7 @@ import scala.annotation.StaticAnnotation
  * type is not a `ZIO`, `ZStream`, `ZSink` or `ZManaged`; on a `val` it has no
  * effect.
  *
- * @see [[https://zio.dev/reference/service-pattern/accessor-methods/ Accessor Methods]]
+ * @see
+ *   [[https://zio.dev/reference/service-pattern/accessor-methods/ Accessor Methods]]
  */
 class throwing extends StaticAnnotation

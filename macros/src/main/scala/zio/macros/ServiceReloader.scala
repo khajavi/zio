@@ -47,7 +47,8 @@ import zio._
  *   } yield message // Hello, Ada
  * }}}
  *
- * @see [[https://zio.dev/reference/service-pattern/reloadable-services/ Reloadable Services]]
+ * @see
+ *   [[https://zio.dev/reference/service-pattern/reloadable-services/ Reloadable Services]]
  */
 trait ServiceReloader {
 
@@ -77,14 +78,13 @@ trait ServiceReloader {
 object ServiceReloader {
 
   /** An error that `register` or `reload` fails with. */
-  sealed trait Error                                       extends Throwable
+  sealed trait Error extends Throwable
 
   /** The layer that builds the service failed with `error`. */
-  final case class ServiceInitializationError(error: Any)  extends Error
+  final case class ServiceInitializationError(error: Any) extends Error
 
   /**
-   * `reload` was called for the service type `tag`, which was never
-   * registered.
+   * `reload` was called for the service type `tag`, which was never registered.
    */
   final case class ServiceNotRegistered(tag: LightTypeTag) extends Error
 

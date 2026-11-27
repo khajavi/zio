@@ -7,8 +7,8 @@ import scala.util.Random
  * A lock that the fiber holding it can acquire again. Ownership belongs to a
  * fiber, identified by its `FiberId`: another fiber, including a child of the
  * owner, cannot release it. Each `lock` or successful `tryLock` by the owner
- * adds one hold, and the lock is released when the owner has called `unlock`
- * as many times.
+ * adds one hold, and the lock is released when the owner has called `unlock` as
+ * many times.
  *
  * When the lock is released and fibers are waiting, a fair lock
  * (`ReentrantLock.make(true)`) passes it to the fiber that has waited longest;
@@ -27,7 +27,8 @@ import scala.util.Random
  *   } yield (count, locked) // (2,false)
  * }}}
  *
- * @see [[https://zio.dev/reference/sync/reentrantlock/ ReentrantLock]]
+ * @see
+ *   [[https://zio.dev/reference/sync/reentrantlock/ ReentrantLock]]
  */
 final class ReentrantLock private (fairness: Boolean, state: Ref[ReentrantLock.State]) {
   import ReentrantLock.State

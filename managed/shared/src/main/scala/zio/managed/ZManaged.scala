@@ -27,8 +27,7 @@ import scala.reflect.ClassTag
 /**
  * A `Reservation[-R, +E, +A]` pairs the effect that acquires a resource with
  * the function that releases it, without saying when or how the resource is
- * used. `release` receives the `Exit` value that the resource is released
- * with.
+ * used. `release` receives the `Exit` value that the resource is released with.
  *
  * [[ZManaged#reserve]] splits a `ZManaged` into a `Reservation`, and
  * `ZManaged.fromReservation` turns a `Reservation` back into a `ZManaged`. The
@@ -46,9 +45,9 @@ final case class Reservation[-R, +E, +A](acquire: ZIO[R, E, A], release: Exit[An
  * Composing managed values with `flatMap`, `zip` or a for comprehension
  * acquires them in order and, when `use` ends, releases them one after another
  * in the reverse order. Release happens whether the `use` function succeeds,
- * fails, dies or is interrupted, and each finalizer receives that `Exit`
- * value. Values combined with `zipPar` are acquired in parallel and released
- * in parallel.
+ * fails, dies or is interrupted, and each finalizer receives that `Exit` value.
+ * Values combined with `zipPar` are acquired in parallel and released in
+ * parallel.
  *
  * Resources do not survive the scope of `use`, meaning that if you attempt to
  * capture the resource, leak it from `use`, and then use it after the resource
@@ -87,8 +86,8 @@ sealed abstract class ZManaged[-R, +E, +A] extends ZManagedVersionSpecific[R, E,
 
   /**
    * The ZIO value that underlies this ZManaged value. It succeeds with a tuple
-   * of a finalizer that releases the resource and the resource itself. It
-   * reads the `ReleaseMap` it registers finalizers in from the fiber ref
+   * of a finalizer that releases the resource and the resource itself. It reads
+   * the `ReleaseMap` it registers finalizers in from the fiber ref
    * `ZManaged.currentReleaseMap`, which `use` and the other operators that run
    * a `ZManaged` set for it.
    *
@@ -211,9 +210,9 @@ sealed abstract class ZManaged[-R, +E, +A] extends ZManagedVersionSpecific[R, E,
 
   /**
    * Recovers from all typed failures with `h`. A cause with only defects or
-   * interruption is not caught. When the cause holds both a typed failure and
-   * a defect (for example from `zipPar`), `h` receives the failure and the
-   * defect is dropped.
+   * interruption is not caught. When the cause holds both a typed failure and a
+   * defect (for example from `zipPar`), `h` receives the failure and the defect
+   * is dropped.
    */
   def catchAll[R1 <: R, E2, A1 >: A](
     h: E => ZManaged[R1, E2, A1]
@@ -223,8 +222,8 @@ sealed abstract class ZManaged[-R, +E, +A] extends ZManagedVersionSpecific[R, E,
   /**
    * Recovers from any failure of the acquisition with `h`, which receives the
    * full `Cause`: typed failures, defects, and an interruption the acquisition
-   * caused itself (such as `ZIO.interrupt`). It does not recover when the
-   * fiber is interrupted from outside.
+   * caused itself (such as `ZIO.interrupt`). It does not recover when the fiber
+   * is interrupted from outside.
    *
    * {{{
    * import zio._
@@ -414,8 +413,8 @@ sealed abstract class ZManaged[-R, +E, +A] extends ZManagedVersionSpecific[R, E,
   /**
    * A version of `foldManaged` whose `failure` function receives the full
    * `Cause`. It recovers from typed failures, defects, and an interruption the
-   * acquisition caused itself (such as `ZIO.interrupt`), but not when the
-   * fiber is interrupted from outside.
+   * acquisition caused itself (such as `ZIO.interrupt`), but not when the fiber
+   * is interrupted from outside.
    */
   def foldCauseManaged[R1 <: R, E1, A1](
     failure: Cause[E] => ZManaged[R1, E1, A1],
@@ -528,13 +527,13 @@ sealed abstract class ZManaged[-R, +E, +A] extends ZManagedVersionSpecific[R, E,
     ZManaged(zio.flatMap { case (fin, a) => f(a).map((fin, _)) })
 
   /**
-   * Returns a managed value whose result is a memoized version of this one.
-   * The inner value acquires this resource the first time it is used, and
-   * every later use, sequential or parallel, gets the same resource without
-   * acquiring it again; a failed acquisition is not retried, and later uses
-   * fail with the same error. The resource is released when the outer value
-   * is released, not when a use of the inner value ends, and it is never
-   * acquired if the inner value is not used.
+   * Returns a managed value whose result is a memoized version of this one. The
+   * inner value acquires this resource the first time it is used, and every
+   * later use, sequential or parallel, gets the same resource without acquiring
+   * it again; a failed acquisition is not retried, and later uses fail with the
+   * same error. The resource is released when the outer value is released, not
+   * when a use of the inner value ends, and it is never acquired if the inner
+   * value is not used.
    */
   def memoize(implicit trace: Trace): ZManaged[Any, Nothing, ZManaged[R, E, A]] =
     ZManaged.releaseMap.mapZIO { finalizers =>
@@ -712,10 +711,10 @@ sealed abstract class ZManaged[-R, +E, +A] extends ZManagedVersionSpecific[R, E,
    * Acquires the managed resource now and succeeds with a `Managed` that cannot
    * fail: acquiring that `Managed` gives the resource already acquired and
    * registers its finalizer, which then runs when that `Managed` is released.
-   * If the acquisition fails, the finalizers it registered run at once, and
-   * the effect fails with that cause. You should take care that you are
-   * not interrupted between running preallocate and actually acquiring the
-   * resource as you might leak otherwise.
+   * If the acquisition fails, the finalizers it registered run at once, and the
+   * effect fails with that cause. You should take care that you are not
+   * interrupted between running preallocate and actually acquiring the resource
+   * as you might leak otherwise.
    */
   def preallocate(implicit trace: Trace): ZIO[R, E, Managed[Nothing, A]] =
     ZIO.uninterruptibleMask { restore =>
@@ -742,9 +741,9 @@ sealed abstract class ZManaged[-R, +E, +A] extends ZManagedVersionSpecific[R, E,
 
   /**
    * Like `preallocate`, but as a `ZManaged`: acquiring the outer value acquires
-   * this resource, and the inner `Managed` cannot fail and gives that
-   * resource. The resource is released once: when the inner value is released,
-   * or when the outer value is released if the inner value was not used.
+   * this resource, and the inner `Managed` cannot fail and gives that resource.
+   * The resource is released once: when the inner value is released, or when
+   * the outer value is released if the inner value was not used.
    */
   def preallocateManaged(implicit trace: Trace): ZManaged[R, E, Managed[Nothing, A]] =
     ZManaged {
@@ -1279,9 +1278,9 @@ sealed abstract class ZManaged[-R, +E, +A] extends ZManagedVersionSpecific[R, E,
     ZManaged.withParallismUnbounded *> self
 
   /**
-   * Named alias for `<*>`. Acquires this resource and then `that`, and
-   * succeeds with both values combined by `Zippable` (a tuple, with `Unit`
-   * values left out). On release, `that` is released first.
+   * Named alias for `<*>`. Acquires this resource and then `that`, and succeeds
+   * with both values combined by `Zippable` (a tuple, with `Unit` values left
+   * out). On release, `that` is released first.
    */
   def zip[R1 <: R, E1 >: E, A1](that: => ZManaged[R1, E1, A1])(implicit
     zippable: Zippable[A, A1],
@@ -1342,9 +1341,9 @@ sealed abstract class ZManaged[-R, +E, +A] extends ZManagedVersionSpecific[R, E,
   /**
    * Returns an effect that executes both this effect and the specified effect,
    * in parallel, combining their results with the specified `f` function. If
-   * either side fails, then the other side will be interrupted. On release,
-   * the two sides are released in parallel, and the finalizers of each side
-   * run one after another in reverse order.
+   * either side fails, then the other side will be interrupted. On release, the
+   * two sides are released in parallel, and the finalizers of each side run one
+   * after another in reverse order.
    */
   def zipWithPar[R1 <: R, E1 >: E, A1, A2](
     that: => ZManaged[R1, E1, A1]
@@ -1592,8 +1591,8 @@ object ZManaged extends ZManagedPlatformSpecific {
   final class ProvideSomeLayer[R0, -R, +E, +A](private val self: ZManaged[R, E, A]) extends AnyVal {
 
     /**
-     * Provides the `R1` part of the environment with `layer` and leaves `R0`
-     * to be provided later. The layer is built as part of the acquisition.
+     * Provides the `R1` part of the environment with `layer` and leaves `R0` to
+     * be provided later. The layer is built as part of the acquisition.
      */
     def apply[E1 >: E, R1](
       layer: => ZLayer[R0, E1, R1]
@@ -1645,8 +1644,8 @@ object ZManaged extends ZManagedPlatformSpecific {
   final class UpdateServiceAt[-R, +E, +A, Service](private val self: ZManaged[R, E, A]) extends AnyVal {
 
     /**
-     * Runs the `ZManaged` with the service stored under `key` in the
-     * `Map[Key, Service]` of its environment replaced by `f` applied to it.
+     * Runs the `ZManaged` with the service stored under `key` in the `Map[Key,
+     * Service]` of its environment replaced by `f` applied to it.
      */
     def apply[R1 <: R with Map[Key, Service], Key](key: => Key)(
       f: Service => Service
@@ -1694,8 +1693,8 @@ object ZManaged extends ZManagedPlatformSpecific {
      * finalizer will be run immediately.
      *
      * The finalizer returned from this method will remove the original
-     * finalizer from the map and run it. When the scope was already closed,
-     * the returned finalizer does nothing.
+     * finalizer from the map and run it. When the scope was already closed, the
+     * returned finalizer does nothing.
      */
     def add(finalizer: Finalizer)(implicit trace: Trace): UIO[Finalizer]
 
@@ -1703,9 +1702,9 @@ object ZManaged extends ZManagedPlatformSpecific {
      * Adds a finalizer to the finalizers associated with this scope. If the
      * scope is still open, a [[Key]] will be returned. This is an opaque
      * identifier that can be used to activate this finalizer and remove it from
-     * the map. If the scope has been closed, the finalizer will
-     * be executed immediately (with the [[Exit]] value with which the scope has
-     * ended) and no Key will be returned.
+     * the map. If the scope has been closed, the finalizer will be executed
+     * immediately (with the [[Exit]] value with which the scope has ended) and
+     * no Key will be returned.
      */
     def addIfOpen(finalizer: Finalizer)(implicit trace: Trace): UIO[Option[Key]]
 
@@ -2080,8 +2079,8 @@ object ZManaged extends ZManagedPlatformSpecific {
   /**
    * Evaluate each effect in the structure from left to right, collecting the
    * successful values and discarding the empty cases (an element whose effect
-   * fails with `None`). A failure with `Some(e)` fails the result with `e`.
-   * For a parallel version, see `collectPar`.
+   * fails with `None`). A failure with `Some(e)` fails the result with `e`. For
+   * a parallel version, see `collectPar`.
    */
   def collect[R, E, A, B, Collection[+Element] <: Iterable[Element]](in: Collection[A])(
     f: A => ZManaged[R, Option[E], B]
@@ -2192,8 +2191,8 @@ object ZManaged extends ZManagedPlatformSpecific {
     ZManaged.fromZIO(ZIO.environment)
 
   /**
-   * Create a managed that accesses the environment and applies a pure
-   * function to it.
+   * Create a managed that accesses the environment and applies a pure function
+   * to it.
    */
   def environmentWith[R]: EnvironmentWithPartiallyApplied[R] =
     new EnvironmentWithPartiallyApplied
@@ -2366,8 +2365,8 @@ object ZManaged extends ZManagedPlatformSpecific {
 
   /**
    * Applies the function `f` to each element of the `Collection[A]` in
-   * parallel, and returns the results in a new `Collection[B]`, in the order
-   * of the input.
+   * parallel, and returns the results in a new `Collection[B]`, in the order of
+   * the input.
    *
    * The resources of the elements are acquired in parallel and released in
    * parallel. The finalizers of one element run in reverse order of
@@ -2407,8 +2406,8 @@ object ZManaged extends ZManagedPlatformSpecific {
 
   /**
    * Applies the function `f` to each element of the `Iterable[A]` and runs
-   * produced effects sequentially. The resources are released in reverse
-   * order of acquisition.
+   * produced effects sequentially. The resources are released in reverse order
+   * of acquisition.
    *
    * Equivalent to `foreach(as)(f).unit`, but without the cost of building the
    * list of results.
@@ -2499,8 +2498,8 @@ object ZManaged extends ZManagedPlatformSpecific {
    * Lifts a pure `Reservation[R, E, A]` into `ZManaged[R, E, A]`. The
    * acquisition step is performed interruptibly.
    *
-   * The release step is registered before the acquisition step runs, so it
-   * also runs when the acquisition step fails or is interrupted.
+   * The release step is registered before the acquisition step runs, so it also
+   * runs when the acquisition step fails or is interrupted.
    *
    * {{{
    * import zio._
@@ -2956,8 +2955,8 @@ object ZManaged extends ZManagedPlatformSpecific {
 
   /**
    * Returns the [[ReleaseMap]] of the current scope. Under `use`, this is the
-   * map that `use` releases at the end, so finalizers added to it run when
-   * the `use` effect ends.
+   * map that `use` releases at the end, so finalizers added to it run when the
+   * `use` effect ends.
    */
   def releaseMap(implicit trace: Trace): ZManaged[Any, Nothing, ReleaseMap] =
     apply(ZManaged.currentReleaseMap.get.map((Finalizer.noop, _)))
@@ -3131,10 +3130,10 @@ object ZManaged extends ZManagedPlatformSpecific {
    * safely swapped within the scope of the ZManaged. The function provided
    * inside the ZManaged can be used to switch the resource currently in use.
    *
-   * When the resource is switched, the finalizer for the previous resource
-   * will be executed uninterruptibly, before the new resource is acquired. If
-   * the effect executing inside the [[ZManaged#use]] is interrupted, the
-   * finalizer for the resource currently in use is guaranteed to execute.
+   * When the resource is switched, the finalizer for the previous resource will
+   * be executed uninterruptibly, before the new resource is acquired. If the
+   * effect executing inside the [[ZManaged#use]] is interrupted, the finalizer
+   * for the resource currently in use is guaranteed to execute.
    *
    * This constructor can be used to create an expressive control flow that uses
    * several instances of a managed resource. For example:
@@ -3379,8 +3378,8 @@ object ZManaged extends ZManagedPlatformSpecific {
       }
 
     /**
-     * Constructs a `ZManaged[R1 with R2, E3, A]` from a
-     * `ZIO[R1, E1, Reservation[R2, E2, A]]`, with `ZManaged.fromReservationZIO`.
+     * Constructs a `ZManaged[R1 with R2, E3, A]` from a `ZIO[R1, E1,
+     * Reservation[R2, E2, A]]`, with `ZManaged.fromReservationZIO`.
      */
     implicit def ReservationZIOConstructor[R1, R2, E1 <: E3, E2 <: E3, E3, A]
       : WithOut[ZIO[R1, E1, Reservation[R2, E2, A]], ZManaged[R1 with R2, E3, A]] =

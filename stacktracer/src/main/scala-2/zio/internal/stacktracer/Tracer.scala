@@ -5,6 +5,7 @@ package zio.internal.stacktracer
  * `zio.Trace` is `Tracer.instance.Type with Tracer.Traced`.
  */
 object Tracer {
+
   /**
    * The marker that `zio.Trace` adds to `Tracer.instance.Type`. It is a trait
    * on Scala 2 and an alias for `Any` on Scala 3.
@@ -60,12 +61,13 @@ object Tracer {
  * `Tracer.instance`.
  */
 sealed trait Tracer {
+
   /** The type of the traces that this `Tracer` creates. */
   type Type <: AnyRef
 
   /**
-   * The empty trace, which carries no location. On Scala 2 its type is
-   * `Type with Tracer.Traced`; on Scala 3 it is `Type`.
+   * The empty trace, which carries no location. On Scala 2 its type is `Type
+   * with Tracer.Traced`; on Scala 3 it is `Type`.
    */
   val empty: Type with Tracer.Traced
 

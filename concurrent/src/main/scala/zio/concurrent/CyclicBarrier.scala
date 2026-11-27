@@ -19,8 +19,8 @@ import zio.stacktracer.TracingImplicits.disableAutoTrace
  * with it.
  *
  * When a waiting party is interrupted, the barrier breaks: the other waiting
- * parties fail with `()`, and every later `await` fails with `()` until
- * `reset` is called.
+ * parties fail with `()`, and every later `await` fails with `()` until `reset`
+ * is called.
  *
  * {{{
  * import zio._
@@ -34,7 +34,8 @@ import zio.stacktracer.TracingImplicits.disableAutoTrace
  *   } yield arrived.sorted // List(0, 1, 2)
  * }}}
  *
- * @see [[https://zio.dev/reference/sync/cyclicbarrier/ CyclicBarrier]]
+ * @see
+ *   [[https://zio.dev/reference/sync/cyclicbarrier/ CyclicBarrier]]
  */
 final class CyclicBarrier private (
   /** The number of parties required to trip this barrier. */
@@ -152,8 +153,7 @@ object CyclicBarrier {
    * Creates a barrier for `parties` fibers that runs `action` each time the
    * last party arrives, on that party's fiber, before the waiting parties are
    * released. When `action` dies, that last party dies with the same defect,
-   * the other parties of the cycle keep waiting, and the barrier is not
-   * broken.
+   * the other parties of the cycle keep waiting, and the barrier is not broken.
    */
   def make(parties: Int, action: UIO[Any]): UIO[CyclicBarrier] =
     ZIO.succeed(new CyclicBarrier(parties, action))

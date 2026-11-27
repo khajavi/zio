@@ -48,14 +48,14 @@ package object managed extends ZManagedCompatPlatformSpecific {
   type RManaged[-R, +A] = ZManaged[R, Throwable, A]
 
   /**
-   * A `ZManaged` with no requirements that cannot fail:
-   * `ZManaged[Any, Nothing, A]`.
+   * A `ZManaged` with no requirements that cannot fail: `ZManaged[Any, Nothing,
+   * A]`.
    */
   type UManaged[+A] = ZManaged[Any, Nothing, A]
 
   /**
-   * A `ZManaged` that requires an `R` and cannot fail:
-   * `ZManaged[R, Nothing, A]`.
+   * A `ZManaged` that requires an `R` and cannot fail: `ZManaged[R, Nothing,
+   * A]`.
    */
   type URManaged[-R, +A] = ZManaged[R, Nothing, A]
 
@@ -88,9 +88,9 @@ package object managed extends ZManagedCompatPlatformSpecific {
     /**
      * Forks this effect in a [[ZManaged]]. Using the [[ZManaged]] value starts
      * the effect in a new fiber, and the fiber is interrupted when the managed
-     * value is released, for example when the effect passed to
-     * [[ZManaged#use]] completes. A failure of the forked effect does not fail
-     * the managed value; it is observed through the returned fiber.
+     * value is released, for example when the effect passed to [[ZManaged#use]]
+     * completes. A failure of the forked effect does not fail the managed
+     * value; it is observed through the returned fiber.
      */
     final def forkManaged(implicit trace: Trace): ZManaged[R, Nothing, Fiber.Runtime[E, A]] =
       self.toManaged.fork
@@ -250,8 +250,8 @@ package object managed extends ZManagedCompatPlatformSpecific {
   implicit final class ZManagedZChannelCompanionSyntax(private val self: ZChannel.type) extends AnyVal {
 
     /**
-     * Acquires the managed value `m`, then continues with the channel that `use`
-     * builds from it.
+     * Acquires the managed value `m`, then continues with the channel that
+     * `use` builds from it.
      */
     def managed[Env, InErr, InElem, InDone, OutErr, OutElem, OutDone, A](m: => ZManaged[Env, OutErr, A])(
       use: A => ZChannel[Env, InErr, InElem, InDone, OutErr, OutElem, OutDone]
@@ -428,7 +428,8 @@ package object managed extends ZManagedCompatPlatformSpecific {
   }
 
   /**
-   * Adds the `...Managed` stream constructors to the `ZStream` companion object.
+   * Adds the `...Managed` stream constructors to the `ZStream` companion
+   * object.
    */
   implicit final class ZManagedZStreamCompanionSyntax(private val self: ZStream.type) extends AnyVal {
 

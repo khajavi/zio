@@ -10,13 +10,13 @@ import scala.jdk.CollectionConverters._
  * Wrapper over `java.util.concurrent.ConcurrentHashMap`.
  *
  * A mutable map that fibers can share. Every operation returns a `UIO` that
- * runs the matching `ConcurrentHashMap` call each time it is executed. A
- * single call such as `compute`, `computeIfAbsent`, `putIfAbsent` or `replace`
- * updates its key atomically, but a `get` followed by a `put` does not: use
- * `compute` to update a value from its previous value.
+ * runs the matching `ConcurrentHashMap` call each time it is executed. A single
+ * call such as `compute`, `computeIfAbsent`, `putIfAbsent` or `replace` updates
+ * its key atomically, but a `get` followed by a `put` does not: use `compute`
+ * to update a value from its previous value.
  *
- * Operations that visit the entries (`toList`, `fold`, `collectFirst`, ...)
- * see them in the order of the underlying hash table, not in insertion order.
+ * Operations that visit the entries (`toList`, `fold`, `collectFirst`, ...) see
+ * them in the order of the underlying hash table, not in insertion order.
  *
  * {{{
  * import zio._
@@ -31,7 +31,8 @@ import scala.jdk.CollectionConverters._
  *   } yield n // Some(100)
  * }}}
  *
- * @see [[https://zio.dev/reference/sync/concurrentmap/ ConcurrentMap]]
+ * @see
+ *   [[https://zio.dev/reference/sync/concurrentmap/ ConcurrentMap]]
  */
 final class ConcurrentMap[K, V] private (private val underlying: ConcurrentHashMap[K, V]) extends AnyVal {
 
@@ -137,16 +138,16 @@ final class ConcurrentMap[K, V] private (private val underlying: ConcurrentHashM
     ZIO.succeed(Option(underlying.put(key, value)))
 
   /**
-   * Binds each key in `keyValues` to its value, replacing any existing
-   * binding. When a key appears more than once, the last pair wins.
+   * Binds each key in `keyValues` to its value, replacing any existing binding.
+   * When a key appears more than once, the last pair wins.
    */
   def putAll(keyValues: (K, V)*): UIO[Unit] =
     ZIO.succeed(underlying.putAll(keyValues.toMap.asJava))
 
   /**
-   * Adds a new key-value pair, unless the key is already bound to a value
-   * (even an equal one). Returns the value already bound to the key, or `None`
-   * when the pair was added.
+   * Adds a new key-value pair, unless the key is already bound to a value (even
+   * an equal one). Returns the value already bound to the key, or `None` when
+   * the pair was added.
    */
   def putIfAbsent(key: K, value: V): UIO[Option[V]] =
     ZIO.succeed(Option(underlying.putIfAbsent(key, value)))
