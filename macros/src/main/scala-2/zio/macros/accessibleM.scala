@@ -18,6 +18,21 @@ package zio.macros
 
 import scala.annotation.{StaticAnnotation, compileTimeOnly}
 
+/**
+ * Generates accessor methods, like [[accessible]], for a service with one type
+ * parameter of kind `F[_]`. The annotation's type argument, which must be
+ * `Task`, `UIO`, `TaskManaged` or `UManaged`, replaces that parameter in the
+ * accessors' types. For example, on `trait Store[F[_]]` with the member
+ * `def get(key: String): F[Int]`, `@accessibleM[Task]` generates
+ * `def get(key: String): ZIO[Store[Task], Throwable, Int]` in `object Store`.
+ *
+ * Macro annotations exist on Scala 2 only. On Scala 2.13 they need the
+ * `-Ymacro-annotations` compiler option, and on Scala 2.12 the macro paradise
+ * plugin; without them compilation fails with "enable macro paradise to expand
+ * macro annotations".
+ *
+ * @see [[https://zio.dev/reference/service-pattern/accessor-methods/ Accessor Methods]]
+ */
 @compileTimeOnly("enable macro paradise to expand macro annotations")
 class accessibleM[F[_]] extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro AccessibleMMacro.apply

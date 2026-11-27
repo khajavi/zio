@@ -21,8 +21,33 @@ import zio._
 /**
  * A `ServiceReloader` is a "registry" of services, allowing services to be
  * reloaded dynamically. You can create a reloadable version of your service by
- * using the `reloadable` operator on `ZLayer`. Then just call
- * `ServiceLoader.reload` to reload the service.
+ * using the `reloadable` operator on `ZLayer`. Then call
+ * `ServiceReloader.reload` to reload the service.
+ *
+ * The registry keeps one service per type. On Scala 3, the `IsReloadable`
+ * instance that `register` and `reloadable` need is marked `@experimental`, so
+ * the calling code must be in an `@experimental` scope.
+ *
+ * {{{
+ * // scala-2-only
+ * import zio._
+ *
+ * trait Greeter { def greet(name: String): UIO[String] }
+ *
+ * val greeterLayer: ULayer[Greeter] =
+ *   ZLayer.succeed(new Greeter {
+ *     def greet(name: String): UIO[String] = ZIO.succeed(s"Hello, \$name")
+ *   })
+ *
+ * val program: ZIO[ServiceReloader, ServiceReloader.Error, String] =
+ *   for {
+ *     greeter <- ServiceReloader.register[Greeter](greeterLayer)
+ *     _       <- ServiceReloader.reload[Greeter]
+ *     message <- greeter.greet("Ada")
+ *   } yield message // Hello, Ada
+ * }}}
+ *
+ * @see [[https://zio.dev/reference/service-pattern/reloadable-services/ Reloadable Services]]
  */
 trait ServiceReloader {
 
@@ -32,6 +57,9 @@ trait ServiceReloader {
    * which will handle reloading the service. Fails with a
    * `ServiceInitializationError` exception if an error occurs while acquiring
    * the service.
+   *
+   * Registering a service type that is already registered dies with a
+   * `java.lang.ClassCastException`, and the earlier registration stays in use.
    */
   def register[A: Tag: IsReloadable](serviceLayer: ZLayer[Any, Any, A]): IO[ServiceReloader.Error, A]
 
@@ -45,10 +73,19 @@ trait ServiceReloader {
   def reload[A: Tag]: IO[ServiceReloader.Error, Unit]
 }
 
+/** The `ServiceReloader` errors, its live layer and its accessors. */
 object ServiceReloader {
 
+  /** An error that `register` or `reload` fails with. */
   sealed trait Error                                       extends Throwable
+
+  /** The layer that builds the service failed with `error`. */
   final case class ServiceInitializationError(error: Any)  extends Error
+
+  /**
+   * `reload` was called for the service type `tag`, which was never
+   * registered.
+   */
   final case class ServiceNotRegistered(tag: LightTypeTag) extends Error
 
   /**
@@ -116,6 +153,9 @@ object ServiceReloader {
    * which will handle reloading the service. Fails with a
    * `ServiceInitializationError` exception if an error occurs while acquiring
    * the service.
+   *
+   * Registering a service type that is already registered dies with a
+   * `java.lang.ClassCastException`, and the earlier registration stays in use.
    */
   def register[A: Tag: IsReloadable](
     serviceLayer: ZLayer[Any, Any, A]

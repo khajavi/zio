@@ -18,4 +18,14 @@ package zio.macros
 
 import scala.annotation.StaticAnnotation
 
+/**
+ * Marks a `def` of a service annotated with [[accessible]], [[accessibleM]] or
+ * [[accessibleMM]] as one that can throw. Its accessor runs the call in
+ * `ZIO.attempt`, so it returns `ZIO[S, Throwable, A]` and a thrown exception
+ * becomes a failure instead of a defect. It changes only `def`s whose result
+ * type is not a `ZIO`, `ZStream`, `ZSink` or `ZManaged`; on a `val` it has no
+ * effect.
+ *
+ * @see [[https://zio.dev/reference/service-pattern/accessor-methods/ Accessor Methods]]
+ */
 class throwing extends StaticAnnotation
