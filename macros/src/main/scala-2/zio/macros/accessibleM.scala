@@ -26,7 +26,7 @@ import scala.annotation.{StaticAnnotation, compileTimeOnly}
  * get(key: String): F[Int]`, `@accessibleM[Task]` generates `def get(key:
  * String): ZIO[Store[Task], Throwable, Int]` in `object Store`.
  *
- * Macro annotations exist on Scala 2 only. On Scala 2.13 they need the
+ * `@accessibleM` exists on Scala 2 only. On Scala 2.13 it needs the
  * `-Ymacro-annotations` compiler option, and on Scala 2.12 the macro paradise
  * plugin; without them compilation fails with "enable macro paradise to expand
  * macro annotations".
