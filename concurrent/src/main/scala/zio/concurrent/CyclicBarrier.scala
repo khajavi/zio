@@ -19,8 +19,9 @@ import zio.stacktracer.TracingImplicits.disableAutoTrace
  * with it.
  *
  * When a waiting party is interrupted, the barrier breaks: the other waiting
- * parties fail with `()`, and every later `await` fails with `()` until `reset`
- * is called.
+ * parties fail with `()`, and later calls to `await` fail with `()` until
+ * `reset` is called. If the barrier breaks while the barrier action is running,
+ * the cycle that runs it clears the broken state when it finishes.
  *
  * {{{
  * import zio._
@@ -114,7 +115,8 @@ final class CyclicBarrier private (
 
   /**
    * Queries if this barrier is in a broken state. It becomes `true` when a
-   * waiting party is interrupted, and `false` again after `reset`.
+   * waiting party is interrupted, and `false` again after `reset` or when a
+   * cycle whose barrier action was running finishes.
    */
   def isBroken: UIO[Boolean] =
     ZIO.succeed(_broken)
@@ -122,7 +124,8 @@ final class CyclicBarrier private (
   /**
    * The number of parties currently waiting at the barrier. After a waiting
    * party is interrupted, it still counts the parties that were waiting when
-   * the barrier broke, until `reset`.
+   * the barrier broke, until `reset` or until a cycle whose barrier action was
+   * running finishes.
    */
   def waiting: UIO[Int] =
     ZIO.succeed(_waiting)
@@ -144,7 +147,8 @@ object CyclicBarrier {
 
   /**
    * Creates a barrier for `parties` fibers, with no barrier action. `parties`
-   * is not checked: with `0`, `await` never completes.
+   * is not checked: with `0`, `await` does not complete until the barrier is
+   * reset or broken, and then fails with `()`.
    */
   def make(parties: Int): UIO[CyclicBarrier] =
     make(parties, Exit.unit)
