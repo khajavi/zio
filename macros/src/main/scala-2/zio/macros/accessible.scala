@@ -21,8 +21,8 @@ import scala.annotation.{StaticAnnotation, compileTimeOnly}
 /**
  * Generates accessors for a ZIO service: for each `def` and `val` of the
  * service, an accessor of the same name and parameters (a `val` for a `val` of
- * a service without type parameters) that gets the service from the
- * environment and calls the member on it.
+ * a service without type parameters) that gets the service from the environment
+ * and calls the member on it.
  *
  * Annotate either a service trait, in which case the accessors go into its
  * companion object (created when missing), or an object that contains a trait
@@ -30,8 +30,8 @@ import scala.annotation.{StaticAnnotation, compileTimeOnly}
  *
  *   - a member returning `ZIO[R, E, A]`, `ZStream[R, E, A]`, `ZSink[R, E, A, L,
  *     B]` or `ZManaged[R, E, A]` gets an accessor of the same type with `S`
- *     added to `R` (`ZIO[S with R, E, A]`, which is the same type as
- *     `ZIO[S, E, A]` when `R` is `Any`);
+ *     added to `R` (`ZIO[S with R, E, A]`, which is the same type as `ZIO[S, E,
+ *     A]` when `R` is `Any`);
  *   - a member returning any other type `A` gets an accessor returning `ZIO[S,
  *     Nothing, A]`, so an exception it throws becomes a defect; mark a `def`
  *     with [[throwing]] to get `ZIO[S, Throwable, A]` instead.

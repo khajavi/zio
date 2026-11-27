@@ -90,8 +90,8 @@ private[managed] trait ZManagedPlatformSpecific {
 
   /**
    * Returns a managed `ZOutputStream` that writes to the file at `path`. An
-   * existing file is truncated. Fails with an `IOException` when the file cannot
-   * be written.
+   * existing file is truncated. Fails with an `IOException` when the file
+   * cannot be written.
    */
   def writeFile(path: String)(implicit trace: Trace): ZManaged[Any, IOException, ZOutputStream] =
     ZManaged
@@ -105,8 +105,8 @@ private[managed] trait ZManagedPlatformSpecific {
 
   /**
    * Returns a managed `ZOutputStream` that writes to the file at `path`. An
-   * existing file is truncated. Fails with an `IOException` when the file cannot
-   * be written.
+   * existing file is truncated. Fails with an `IOException` when the file
+   * cannot be written.
    */
   def writeFile(path: Path)(implicit trace: Trace): ZManaged[Any, IOException, ZOutputStream] =
     writeFile(path.toString())

@@ -1304,8 +1304,8 @@ sealed abstract class ZManaged[-R, +E, +A] extends ZManagedVersionSpecific[R, E,
 
   /**
    * Named alias for `<&>`. Acquires this resource and `that` in parallel, and
-   * succeeds with both values combined by `Zippable` (a flat tuple, with
-   * `Unit` values left out); see `zipWithPar` for failure and release.
+   * succeeds with both values combined by `Zippable` (a flat tuple, with `Unit`
+   * values left out); see `zipWithPar` for failure and release.
    */
   def zipPar[R1 <: R, E1 >: E, A1](that: => ZManaged[R1, E1, A1])(implicit
     zippable: Zippable[A, A1],
