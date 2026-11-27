@@ -277,8 +277,10 @@ sealed abstract class ZManaged[-R, +E, +A] extends ZManagedVersionSpecific[R, E,
 
   /**
    * Returns an effect whose failure and success have been lifted into an
-   * `Either`. The resulting effect has no typed failure; defects and
-   * interruption still end it.
+   * `Either`. The resulting effect has no typed failure. A cause with only
+   * defects or interruption still ends it; when the cause holds both a typed
+   * failure and a defect, it succeeds with `Left` of the failure and the defect
+   * is dropped.
    */
   def either(implicit ev: CanFail[E], trace: Trace): ZManaged[R, Nothing, Either[E, A]] =
     fold(Left[E, A], Right[E, A])
@@ -306,7 +308,8 @@ sealed abstract class ZManaged[-R, +E, +A] extends ZManagedVersionSpecific[R, E,
   /**
    * Returns a ZManaged that ignores typed failures raised by the acquire effect
    * and runs it repeatedly until it eventually succeeds. Defects are not
-   * retried.
+   * retried; an interruption the acquisition causes itself (such as
+   * `ZIO.interrupt`) is retried.
    */
   def eventually(implicit ev: CanFail[E], trace: Trace): ZManaged[R, Nothing, A] =
     ZManaged(zio.eventually)
@@ -669,7 +672,9 @@ sealed abstract class ZManaged[-R, +E, +A] extends ZManagedVersionSpecific[R, E,
    * executes the specified effect. `that` runs when the cause holds a typed
    * failure, even when it also holds a defect (which is then dropped); a cause
    * with only defects or interruption is not recovered. `ZIO#orElse` differs:
-   * it does not run `that` when the cause holds a defect.
+   * it does not run `that` when the cause holds a defect, and it does run
+   * `that` for an interruption the effect caused itself (such as
+   * `ZIO.interrupt`).
    */
   def orElse[R1 <: R, E2, A1 >: A](
     that: => ZManaged[R1, E2, A1]
@@ -1042,9 +1047,9 @@ sealed abstract class ZManaged[-R, +E, +A] extends ZManagedVersionSpecific[R, E,
   /**
    * Returns an effect that effectually "peeks" at the defect of the acquired
    * resource. `f` receives the cause with its typed failures removed. It is
-   * called for every failed acquisition, so a cause with only typed failures
-   * calls `f` with an empty cause. `ZIO#tapDefect` differs: it does not call
-   * `f` when the cause has no defect.
+   * called for every failed acquisition except an interruption from outside, so
+   * a cause with only typed failures calls `f` with an empty cause.
+   * `ZIO#tapDefect` differs: it does not call `f` when the cause has no defect.
    */
   final def tapDefect[R1 <: R, E1 >: E](f: Cause[Nothing] => ZManaged[R1, E1, Any])(implicit
     trace: Trace
