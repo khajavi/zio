@@ -531,9 +531,11 @@ sealed abstract class ZManaged[-R, +E, +A] extends ZManagedVersionSpecific[R, E,
    * inner value acquires this resource the first time it is used, and every
    * later use, sequential or parallel, gets the same resource without acquiring
    * it again; a failed acquisition is not retried, and later uses fail with the
-   * same error. The resource is released when the outer value is released, not
-   * when a use of the inner value ends, and it is never acquired if the inner
-   * value is not used.
+   * same error. The resource is added to the release map in which the outer
+   * value is acquired, so it is released when that map is released (for `use`,
+   * when the `use` effect ends), not when a use of the inner value ends; an
+   * early release of the outer value with `withEarlyRelease` does not release
+   * it. It is never acquired if the inner value is not used.
    */
   def memoize(implicit trace: Trace): ZManaged[Any, Nothing, ZManaged[R, E, A]] =
     ZManaged.releaseMap.mapZIO { finalizers =>
@@ -2898,8 +2900,9 @@ object ZManaged extends ZManagedPlatformSpecific {
      * Acquires `managed` now and returns a `Managed` that holds the acquired
      * resource. Using the returned `Managed` does not acquire again; releasing
      * it runs the release actions of `managed`. Release actions that have not
-     * run by then run when the `preallocationScope` value is released. A
-     * failure of the acquisition fails the returned effect.
+     * run by then run with the release map in which the `preallocationScope`
+     * value was acquired (for `use`, when the `use` effect ends). A failure of
+     * the acquisition fails the returned effect.
      */
     def apply[R, E, A](managed: => ZManaged[R, E, A]): ZIO[R, E, Managed[Nothing, A]]
   }
@@ -2993,8 +2996,8 @@ object ZManaged extends ZManagedPlatformSpecific {
     /**
      * Acquires `managed` with its finalizers added to this scope, and returns
      * the resource together with a finalizer that releases it early. Resources
-     * that are not released early are released when the `scope` value is
-     * released.
+     * that are not released early are released with the release map in which
+     * the `scope` value was acquired (for `use`, when the `use` effect ends).
      */
     def apply[R, E, A](managed: => ZManaged[R, E, A]): ZIO[R, E, (ZManaged.Finalizer, A)]
   }
@@ -3002,7 +3005,10 @@ object ZManaged extends ZManagedPlatformSpecific {
   /**
    * Creates a [[Scope]] in which resources can be allocated, each with an
    * early-release handle. The resources still allocated in the `Scope` are
-   * released when this `ZManaged` is released.
+   * released with the release map in which this `ZManaged` is acquired (for
+   * `use`, when the `use` effect ends), in reverse order together with the
+   * other resources there. An early release of this value with
+   * `withEarlyRelease` does not release them.
    */
   def scope(implicit trace: Trace): Managed[Nothing, Scope] =
     ZManaged.releaseMap.map { finalizers =>
