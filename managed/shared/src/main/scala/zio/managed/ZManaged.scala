@@ -1197,9 +1197,10 @@ sealed abstract class ZManaged[-R, +E, +A] extends ZManagedVersionSpecific[R, E,
   /**
    * Run an effect while acquiring the resource before and releasing it after.
    * The resource is released whether `f` succeeds, fails, dies or is
-   * interrupted, and also when the acquisition fails partway. The finalizers
-   * run one after another, in reverse order of acquisition, and receive the
-   * `Exit` value of the whole effect.
+   * interrupted, and also when the acquisition fails partway. Resources
+   * acquired in sequence are released one after another, in reverse order of
+   * acquisition (the two sides of a `zipPar` are released in parallel), and the
+   * finalizers receive the `Exit` value of the whole effect.
    */
   def use[R1 <: R, E1 >: E, B](f: A => ZIO[R1, E1, B])(implicit trace: Trace): ZIO[R1, E1, B] =
     ReleaseMap.make.flatMap { releaseMap =>
@@ -1286,8 +1287,8 @@ sealed abstract class ZManaged[-R, +E, +A] extends ZManagedVersionSpecific[R, E,
 
   /**
    * Named alias for `<*>`. Acquires this resource and then `that`, and succeeds
-   * with both values combined by `Zippable` (a tuple, with `Unit` values left
-   * out). On release, `that` is released first.
+   * with both values combined by `Zippable` (a flat tuple, with `Unit` values
+   * left out). On release, `that` is released first.
    */
   def zip[R1 <: R, E1 >: E, A1](that: => ZManaged[R1, E1, A1])(implicit
     zippable: Zippable[A, A1],
@@ -1303,8 +1304,8 @@ sealed abstract class ZManaged[-R, +E, +A] extends ZManagedVersionSpecific[R, E,
 
   /**
    * Named alias for `<&>`. Acquires this resource and `that` in parallel, and
-   * succeeds with both values combined by `Zippable` (a tuple, with `Unit`
-   * values left out); see `zipWithPar` for failure and release.
+   * succeeds with both values combined by `Zippable` (a flat tuple, with
+   * `Unit` values left out); see `zipWithPar` for failure and release.
    */
   def zipPar[R1 <: R, E1 >: E, A1](that: => ZManaged[R1, E1, A1])(implicit
     zippable: Zippable[A, A1],
