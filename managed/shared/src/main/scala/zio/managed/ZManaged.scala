@@ -1089,10 +1089,10 @@ sealed abstract class ZManaged[-R, +E, +A] extends ZManagedVersionSpecific[R, E,
    * Returns an effect that will timeout this resource. It succeeds with `Some`
    * of the resource if the acquisition completes within `d`, and fails if the
    * acquisition fails within `d`. Otherwise it succeeds with `None` as soon as
-   * `d` elapses, without waiting for the acquisition: a new daemon fiber then
-   * interrupts the acquisition and runs the finalizers it registered. An
-   * uninterruptible acquisition, such as one from `acquireReleaseWith`, runs to
-   * the end on that fiber and is then released there.
+   * `d` elapses, without waiting for the acquisition, and a new daemon fiber
+   * interrupts the acquisition. An uninterruptible acquisition, such as one
+   * from `acquireReleaseWith`, still runs to the end, and its resource is then
+   * released.
    */
   def timeout(d: => Duration)(implicit trace: Trace): ZManaged[R, E, Option[A]] =
     ZManaged {
