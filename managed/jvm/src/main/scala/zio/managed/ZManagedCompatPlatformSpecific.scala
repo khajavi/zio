@@ -25,13 +25,19 @@ import scala.concurrent.Future
 
 private[managed] trait ZManagedCompatPlatformSpecific {
 
+  /**
+   * Adds the platform-specific `...Managed` stream constructors to the
+   * `ZStream` companion object.
+   */
   implicit final class ZManagedZStreamCompanionPlatformSpecificSyntax(private val self: ZStream.type) {
 
     /**
      * Creates a stream from an asynchronous callback that can be called
-     * multiple times. The registration of the callback itself returns an a
+     * multiple times. The registration of the callback itself returns a
      * managed resource. The optionality of the error type `E` can be used to
-     * signal the end of the stream, by setting it to `None`.
+     * signal the end of the stream, by setting it to `None`. On Scala.js the
+     * callback returns a `Future[Boolean]`; on the other platforms it returns
+     * `Unit`.
      */
     def asyncManaged[R, E, A](
       register: (ZIO[R, Option[E], Chunk[A]] => Unit) => ZManaged[R, E, Any],
@@ -66,6 +72,10 @@ private[managed] trait ZManagedCompatPlatformSpecific {
       ZStream.fromReaderScoped[R](reader.scoped, chunkSize)
   }
 
+  /**
+   * Adds `fromOutputStreamManaged`, which returns a `ZSink`, to the `ZStream`
+   * companion object.
+   */
   implicit final class ZManagedZSinkCompanionPlatformSpecificSyntax(private val self: ZStream.type) {
 
     /**
