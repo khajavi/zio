@@ -1724,9 +1724,9 @@ object ZManaged extends ZManagedPlatformSpecific {
 
     /**
      * Runs the specified finalizer and removes it from the finalizers
-     * associated with this scope. The finalizer receives `exit`, after the
-     * functions given to `updateAll` are applied to it. Does nothing when the
-     * key is not in the map or the scope has been closed.
+     * associated with this scope. The finalizer, wrapped by the functions given
+     * to `updateAll`, receives `exit`. Does nothing when the key is not in the
+     * map or the scope has been closed.
      */
     def release(key: Key, exit: Exit[Any, Any])(implicit trace: Trace): UIO[Any]
 
@@ -3314,8 +3314,9 @@ object ZManaged extends ZManagedPlatformSpecific {
 
   /**
    * The [[ZManagedConstructor]] instances that `ZManaged.from` uses: for
-   * `Either`, `Option`, `Reservation`, `Try` and their subtypes, and, with
-   * lower priority, for `ZIO` effects and for any other value.
+   * `Either`, `Option`, `Try` and their subtypes, for `Reservation` and for a
+   * `ZIO` that produces a `Reservation`, and, with lower priority, for other
+   * `ZIO` effects and for any other value.
    */
   object ZManagedConstructor extends ZManagedConstructorLowPriority1 {
 
